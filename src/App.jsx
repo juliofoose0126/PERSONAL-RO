@@ -13,9 +13,11 @@ import {
   Download,
   Menu,
   X,
+  Save,
+  FolderUp,
 } from 'lucide-react';
 
-import { usePersistentState, STORAGE_KEYS } from './utils/storage.js';
+import { usePersistentState, STORAGE_KEYS, buildBackup, parseBackup } from './utils/storage.js';
 import { getSampleDataset } from './data/sampleData.js';
 import { REAL_OBRAS, REAL_TRABAJADORES } from './data/personalReal.js';
 import {
@@ -75,6 +77,8 @@ export default function App() {
     setActiveTab(id);
     setMobileMenuOpen(false);
   }
+
+  const backupInputRef = useRef(null);
 
   const currentWeek = useMemo(() => {
     return semanas.find((s) => s.id === currentWeekId) || semanas[0] || null;
@@ -193,6 +197,44 @@ export default function App() {
     setCurrentWeekId(null);
   }
 
+  // ---------- Respaldo / restauración ----------
+  // Los datos viven solo en el localStorage de este navegador (no hay
+  // servidor). Si la app se abre desde otro dominio (p. ej. otra URL de
+  // Vercel) o se borran los datos del sitio, este respaldo .json es la
+  // única forma de recuperar lo capturado.
+  async function respaldarDatos() {
+    const data = buildBackup({ obras, trabajadores, semanas, currentWeekId });
+    const { saveAs } = await import('file-saver');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const fecha = new Date().toISOString().slice(0, 10);
+    saveAs(blob, `respaldo-nomina-obra-${fecha}.json`);
+  }
+
+  function restaurarDatos(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = parseBackup(reader.result);
+        if (
+          !confirm(
+            'Esto reemplazará los datos actuales (obras, trabajadores, semanas) con los del respaldo. ¿Continuar?'
+          )
+        ) {
+          return;
+        }
+        setObras(data.obras);
+        setTrabajadores(data.trabajadores);
+        setSemanas(data.semanas);
+        setCurrentWeekId(data.currentWeekId || null);
+        alert('Respaldo restaurado correctamente.');
+      } catch (err) {
+        alert(`El archivo de respaldo no es válido: ${err.message || err}`);
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // ---------- Importación inteligente ----------
   function applyImportBatch(items) {
     const obrasLocal = [...obras];
@@ -298,6 +340,20 @@ export default function App() {
 
           <div className="hidden flex-wrap items-center gap-2 sm:flex">
             <button
+              onClick={respaldarDatos}
+              title="Descarga un archivo .json con todos tus datos, por si cambias de dispositivo o de URL"
+              className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm active:translate-y-0"
+            >
+              <Save className="h-4 w-4" /> Respaldar datos
+            </button>
+            <button
+              onClick={() => backupInputRef.current?.click()}
+              title="Restaurar datos desde un archivo de respaldo .json"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-700 hover:shadow-sm active:translate-y-0"
+            >
+              <FolderUp className="h-4 w-4" /> Restaurar
+            </button>
+            <button
               onClick={cargarDatosEjemplo}
               className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm active:translate-y-0"
             >
@@ -310,6 +366,14 @@ export default function App() {
               <Trash2 className="h-4 w-4" /> Borrar todo
             </button>
           </div>
+
+          <input
+            ref={backupInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => { restaurarDatos(e.target.files?.[0]); e.target.value = ''; }}
+          />
 
           <button
             onClick={() => setMobileMenuOpen((v) => !v)}
@@ -327,14 +391,28 @@ export default function App() {
             <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Acciones rápidas</p>
             <div className="flex flex-col gap-2">
               <button
+                onClick={() => { respaldarDatos(); setMobileMenuOpen(false); }}
+                className="animate-fade-in-up inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+              >
+                <Save className="h-4 w-4" /> Respaldar datos
+              </button>
+              <button
+                onClick={() => { backupInputRef.current?.click(); setMobileMenuOpen(false); }}
+                style={{ animationDelay: '15ms' }}
+                className="animate-fade-in-up inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50"
+              >
+                <FolderUp className="h-4 w-4" /> Restaurar respaldo
+              </button>
+              <button
                 onClick={() => { cargarDatosEjemplo(); setMobileMenuOpen(false); }}
+                style={{ animationDelay: '30ms' }}
                 className="animate-fade-in-up inline-flex items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-3 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100"
               >
                 <Sparkles className="h-4 w-4" /> Cargar datos de ejemplo
               </button>
               <button
                 onClick={() => { limpiarTodo(); setMobileMenuOpen(false); }}
-                style={{ animationDelay: '30ms' }}
+                style={{ animationDelay: '45ms' }}
                 className="animate-fade-in-up inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50"
               >
                 <Trash2 className="h-4 w-4" /> Borrar todo
