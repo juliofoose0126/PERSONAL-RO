@@ -27,6 +27,7 @@ import {
   addDays,
   getMonday,
   groupByObra,
+  groupByCabo,
   currencyMX,
 } from './utils/payroll.js';
 import { normalizeText, nameSimilarity } from './utils/normalize.js';
@@ -101,6 +102,11 @@ export default function App() {
     return { grupos, total };
   }, [currentWeek, trabajadores, obras]);
 
+  const resumenCabo = useMemo(() => {
+    if (!currentWeek) return { grupos: [], sinCabo: { filas: [], subtotal: 0 } };
+    return groupByCabo(currentWeek, trabajadores);
+  }, [currentWeek, trabajadores]);
+
   // ---------- Obras ----------
   function addObra(nombre) {
     const nueva = { id: uuidv4(), nombre };
@@ -128,11 +134,20 @@ export default function App() {
   }
 
   function updateTrabajador(id, patch) {
-    setTrabajadores((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    setTrabajadores((prev) => {
+      const previo = prev.find((t) => t.id === id);
+      const dejaDeSerCabo = previo?.esCabo && patch.esCabo === false;
+      const next = prev.map((t) => (t.id === id ? { ...t, ...patch } : t));
+      // Si deja de ser cabo, su cuadrilla queda sin cabo asignado (pago directo)
+      // en vez de apuntar a un cabo inválido.
+      return dejaDeSerCabo ? next.map((t) => (t.caboId === id ? { ...t, caboId: null } : t)) : next;
+    });
   }
 
   function deleteTrabajador(id) {
-    setTrabajadores((prev) => prev.filter((t) => t.id !== id));
+    setTrabajadores((prev) =>
+      prev.filter((t) => t.id !== id).map((t) => (t.caboId === id ? { ...t, caboId: null } : t))
+    );
     setSemanas((prev) =>
       prev.map((s) => ({ ...s, registros: s.registros.filter((r) => r.trabajadorId !== id) }))
     );
@@ -494,6 +509,7 @@ export default function App() {
         {activeTab === 'nomina' && (
           <PayrollSummaryView
             resumen={resumenSemana}
+            resumenCabo={resumenCabo}
             semana={currentWeek}
             onExport={handleExport}
             exporting={exporting}
@@ -577,7 +593,9 @@ function WeekBar({ semanas, currentWeek, onSelect, onNueva, filtroObra, setFiltr
   );
 }
 
-function PayrollSummaryView({ resumen, semana, onExport, exporting }) {
+function PayrollSummaryView({ resumen, resumenCabo, semana, onExport, exporting }) {
+  const [vista, setVista] = useState('obra');
+
   return (
     <div className="space-y-4 sm:space-y-5">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -596,6 +614,37 @@ function PayrollSummaryView({ resumen, semana, onExport, exporting }) {
         </button>
       </div>
 
+      <div className="inline-flex w-full rounded-lg border border-slate-200 bg-white p-1 shadow-sm sm:w-auto">
+        <button
+          onClick={() => setVista('obra')}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors duration-150 sm:flex-none ${
+            vista === 'obra' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          Por Obra
+        </button>
+        <button
+          onClick={() => setVista('cabo')}
+          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors duration-150 sm:flex-none ${
+            vista === 'cabo' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          Por Cabo
+        </button>
+      </div>
+
+      {vista === 'obra' ? (
+        <PayrollByObra resumen={resumen} />
+      ) : (
+        <PayrollByCabo resumenCabo={resumenCabo} />
+      )}
+    </div>
+  );
+}
+
+function PayrollByObra({ resumen }) {
+  return (
+    <div className="space-y-4 sm:space-y-5">
       {resumen.grupos.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-400">
           No hay registros de asistencia para esta semana todavía.
@@ -645,6 +694,81 @@ function PayrollSummaryView({ resumen, semana, onExport, exporting }) {
           </table>
         </div>
       ))}
+    </div>
+  );
+}
+
+function PayrollByCabo({ resumenCabo }) {
+  const { grupos, sinCabo } = resumenCabo;
+  const vacio = grupos.length === 0 && sinCabo.filas.length === 0;
+
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      {vacio && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-400">
+          No hay registros de asistencia para esta semana todavía.
+        </div>
+      )}
+
+      {grupos.map((g) => (
+        <div key={g.cabo.id} className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
+          <div className="flex items-center gap-2 bg-amber-50 px-4 py-3">
+            <HardHat className="h-4 w-4 shrink-0 text-amber-600" />
+            <h4 className="font-semibold text-slate-700">Cuadrilla de {g.cabo.nombre}</h4>
+            <span className="ml-auto text-xs text-amber-600">{g.filas.length} trabajador(es)</span>
+          </div>
+
+          <div className="divide-y divide-slate-50">
+            {g.caboFila && (
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-700">{g.cabo.nombre}</p>
+                  <p className="text-xs text-amber-600">Pago del propio Cabo</p>
+                </div>
+                <span className="shrink-0 font-semibold text-slate-700">{currencyMX(g.caboFila.neto)}</span>
+              </div>
+            )}
+            {g.filas
+              .sort((a, b) => a.trabajador.nombre.localeCompare(b.trabajador.nombre, 'es'))
+              .map(({ trabajador, neto }) => (
+                <div key={trabajador.id} className="flex items-center justify-between gap-2 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-700">{trabajador.nombre}</p>
+                    <p className="text-xs text-slate-400">{trabajador.puesto || '—'}</p>
+                  </div>
+                  <span className="shrink-0 font-semibold text-slate-700">{currencyMX(neto)}</span>
+                </div>
+              ))}
+          </div>
+
+          <div className="flex items-center justify-between bg-amber-50 px-4 py-3">
+            <span className="text-sm font-semibold text-amber-800">Total a entregar a {g.cabo.nombre}</span>
+            <span className="text-lg font-bold text-amber-800">{currencyMX(g.totalCabo)}</span>
+          </div>
+        </div>
+      ))}
+
+      {sinCabo.filas.length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
+            <h4 className="font-semibold text-slate-700">Sin Cabo Asignado (pago directo)</h4>
+            <span className="text-sm font-semibold text-slate-600">{currencyMX(sinCabo.subtotal)}</span>
+          </div>
+          <div className="divide-y divide-slate-50">
+            {sinCabo.filas
+              .sort((a, b) => a.trabajador.nombre.localeCompare(b.trabajador.nombre, 'es'))
+              .map(({ trabajador, neto }) => (
+                <div key={trabajador.id} className="flex items-center justify-between gap-2 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-700">{trabajador.nombre}</p>
+                    <p className="text-xs text-slate-400">{trabajador.puesto || '—'}</p>
+                  </div>
+                  <span className="shrink-0 font-semibold text-slate-700">{currencyMX(neto)}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

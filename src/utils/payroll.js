@@ -161,3 +161,57 @@ export function groupByObra(semana, trabajadores, obras) {
     .filter((g) => g.filas.length > 0)
     .sort((a, b) => a.obra.nombre.localeCompare(b.obra.nombre, 'es'));
 }
+
+// Agrupa los registros de una semana por Cabo/Encargado: cada grupo trae el
+// desglose de su cuadrilla, el pago del propio cabo (si tiene registro) y el
+// total acumulado a entregarle para que él haga la repartición. Los
+// trabajadores sin cabo asignado (pago directo) se devuelven aparte.
+export function groupByCabo(semana, trabajadores) {
+  const trabajadorPorId = new Map(trabajadores.map((t) => [t.id, t]));
+  const gruposPorCaboId = new Map();
+  const sinCabo = { filas: [], subtotal: 0 };
+
+  const getOrCreateGrupo = (cabo) => {
+    if (!gruposPorCaboId.has(cabo.id)) {
+      gruposPorCaboId.set(cabo.id, { cabo, filas: [], caboFila: null, equipoSubtotal: 0 });
+    }
+    return gruposPorCaboId.get(cabo.id);
+  };
+
+  for (const registro of semana?.registros || []) {
+    const trabajador = trabajadorPorId.get(registro.trabajadorId);
+    if (!trabajador) continue;
+    const neto = totalNeto({
+      dias: registro.dias,
+      sueldoDiario: trabajador.sueldoDiario,
+      extras: registro.extras,
+      vales: registro.vales,
+    });
+    const fila = { trabajador, registro, neto };
+
+    if (trabajador.esCabo) {
+      const grupo = getOrCreateGrupo(trabajador);
+      grupo.caboFila = fila;
+      continue;
+    }
+
+    const cabo = trabajador.caboId ? trabajadorPorId.get(trabajador.caboId) : null;
+    if (cabo && cabo.esCabo) {
+      const grupo = getOrCreateGrupo(cabo);
+      grupo.filas.push(fila);
+      grupo.equipoSubtotal += neto;
+    } else {
+      sinCabo.filas.push(fila);
+      sinCabo.subtotal += neto;
+    }
+  }
+
+  const grupos = Array.from(gruposPorCaboId.values())
+    .map((g) => ({
+      ...g,
+      totalCabo: g.equipoSubtotal + (g.caboFila?.neto || 0),
+    }))
+    .sort((a, b) => a.cabo.nombre.localeCompare(b.cabo.nombre, 'es'));
+
+  return { grupos, sinCabo };
+}
