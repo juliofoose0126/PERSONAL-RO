@@ -189,7 +189,7 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <h3 className="mb-1 font-semibold text-slate-800">Importación inteligente</h3>
         <p className="mb-4 text-sm text-slate-500">
           Sube Excel/CSV, PDF de listas de raya, o una foto/captura. El sistema mapea columnas
@@ -202,7 +202,7 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
             e.preventDefault();
             handleFiles(e.dataTransfer.files);
           }}
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center"
+          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center sm:px-6 sm:py-10"
         >
           {stage === 'loading' ? (
             <>
@@ -215,16 +215,16 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
               <p className="text-sm text-slate-500">
                 Arrastra un archivo aquí o usa los botones de abajo
               </p>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex w-full flex-col justify-center gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700 active:scale-[0.98] sm:py-2"
                 >
                   <FileSpreadsheet className="h-4 w-4" /> Excel / CSV / PDF
                 </button>
                 <button
                   onClick={() => cameraInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 active:scale-[0.98] sm:py-2"
                 >
                   <Camera className="h-4 w-4" /> Foto / Cámara
                 </button>
@@ -263,14 +263,14 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
               tanto, captura los datos manualmente:
             </p>
             <form onSubmit={addManualRecord} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <input placeholder="Nombre" value={manualRecord.nombre} onChange={(e) => setManualRecord({ ...manualRecord, nombre: e.target.value })} className="col-span-2 rounded border border-amber-200 px-2 py-1.5 text-sm sm:col-span-1" />
-              <input placeholder="Obra" value={manualRecord.obra} onChange={(e) => setManualRecord({ ...manualRecord, obra: e.target.value })} className="rounded border border-amber-200 px-2 py-1.5 text-sm" />
-              <input placeholder="Puesto" value={manualRecord.puesto} onChange={(e) => setManualRecord({ ...manualRecord, puesto: e.target.value })} className="rounded border border-amber-200 px-2 py-1.5 text-sm" />
-              <input type="number" placeholder="Sueldo diario" value={manualRecord.sueldoDiario} onChange={(e) => setManualRecord({ ...manualRecord, sueldoDiario: e.target.value })} className="rounded border border-amber-200 px-2 py-1.5 text-sm" />
-              <input type="number" placeholder="Días" value={manualRecord.diasTrabajados} onChange={(e) => setManualRecord({ ...manualRecord, diasTrabajados: e.target.value })} className="rounded border border-amber-200 px-2 py-1.5 text-sm" />
-              <input type="number" placeholder="Extras" value={manualRecord.extras} onChange={(e) => setManualRecord({ ...manualRecord, extras: e.target.value })} className="rounded border border-amber-200 px-2 py-1.5 text-sm" />
-              <input type="number" placeholder="Anticipos" value={manualRecord.anticipos} onChange={(e) => setManualRecord({ ...manualRecord, anticipos: e.target.value })} className="rounded border border-amber-200 px-2 py-1.5 text-sm" />
-              <button type="submit" className="col-span-2 rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 sm:col-span-4">
+              <input placeholder="Nombre" value={manualRecord.nombre} onChange={(e) => setManualRecord({ ...manualRecord, nombre: e.target.value })} className="col-span-2 rounded border border-amber-200 px-2 py-2.5 text-sm sm:col-span-1 sm:py-1.5" />
+              <input placeholder="Obra" value={manualRecord.obra} onChange={(e) => setManualRecord({ ...manualRecord, obra: e.target.value })} className="rounded border border-amber-200 px-2 py-2.5 text-sm sm:py-1.5" />
+              <input placeholder="Puesto" value={manualRecord.puesto} onChange={(e) => setManualRecord({ ...manualRecord, puesto: e.target.value })} className="rounded border border-amber-200 px-2 py-2.5 text-sm sm:py-1.5" />
+              <input type="number" placeholder="Sueldo diario" value={manualRecord.sueldoDiario} onChange={(e) => setManualRecord({ ...manualRecord, sueldoDiario: e.target.value })} className="rounded border border-amber-200 px-2 py-2.5 text-sm sm:py-1.5" />
+              <input type="number" placeholder="Días" value={manualRecord.diasTrabajados} onChange={(e) => setManualRecord({ ...manualRecord, diasTrabajados: e.target.value })} className="rounded border border-amber-200 px-2 py-2.5 text-sm sm:py-1.5" />
+              <input type="number" placeholder="Extras" value={manualRecord.extras} onChange={(e) => setManualRecord({ ...manualRecord, extras: e.target.value })} className="rounded border border-amber-200 px-2 py-2.5 text-sm sm:py-1.5" />
+              <input type="number" placeholder="Anticipos" value={manualRecord.anticipos} onChange={(e) => setManualRecord({ ...manualRecord, anticipos: e.target.value })} className="rounded border border-amber-200 px-2 py-2.5 text-sm sm:py-1.5" />
+              <button type="submit" className="col-span-2 rounded bg-amber-600 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 sm:col-span-4 sm:py-1.5">
                 Agregar registro
               </button>
             </form>
@@ -279,7 +279,7 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
       </div>
 
       {stage === 'mapping' && sheetData && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="mb-3 flex items-center gap-2 text-slate-700">
             <FileText className="h-5 w-5" />
             <h4 className="font-semibold">Mapeo de columnas ({sheetData.rows.length} filas detectadas)</h4>
@@ -299,7 +299,7 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
                   onChange={(e) =>
                     setMapping({ ...mapping, [field]: e.target.value === '' ? undefined : Number(e.target.value) })
                   }
-                  className="w-full rounded border border-slate-200 px-2 py-2 text-sm"
+                  className="w-full rounded border border-slate-200 px-2 py-2.5 text-sm sm:py-2"
                 >
                   <option value="">(ninguna)</option>
                   {sheetData.headers.map((h, idx) => (
@@ -309,11 +309,11 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
               </div>
             ))}
           </div>
-          <div className="mt-5 flex justify-end gap-2">
-            <button onClick={resetAll} className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button onClick={resetAll} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 sm:py-2">
               Cancelar
             </button>
-            <button onClick={confirmMapping} className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
+            <button onClick={confirmMapping} className="rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 sm:py-2">
               Continuar
             </button>
           </div>
@@ -321,8 +321,8 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
       )}
 
       {stage === 'reviewing' && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h4 className="font-semibold text-slate-700">
               Revisión de importación ({classified.length} registros)
             </h4>
@@ -333,7 +333,40 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
             )}
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Vista de tarjetas — móvil */}
+          <div className="divide-y divide-slate-100 sm:hidden">
+            {classified.map((item) => (
+              <div key={item.key} className="py-3">
+                <div className="mb-1.5 flex items-start justify-between gap-2">
+                  <p className="font-medium text-slate-700">{item.record.nombre}</p>
+                  {item.status === 'duplicate' ? (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                      {Math.round(item.score * 100)}% dup.
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                      Nuevo
+                    </span>
+                  )}
+                </div>
+                <p className="mb-2 text-xs text-slate-400">
+                  {item.record.obra || '—'} · Sueldo {item.record.sueldoDiario || '—'} · Días {item.record.diasTrabajados || '—'}
+                </p>
+                <select
+                  value={item.decision || ''}
+                  onChange={(e) => updateDecision(item.key, e.target.value)}
+                  className="w-full rounded border border-slate-200 px-2 py-2.5 text-sm"
+                >
+                  <option value="">Pendiente</option>
+                  {item.status === 'duplicate' && <option value="merge">Fusionar/Actualizar</option>}
+                  <option value="create">Crear como nuevo</option>
+                  <option value="skip">Omitir</option>
+                </select>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -381,20 +414,20 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
             </table>
           </div>
 
-          <div className="mt-5 flex justify-end gap-2">
-            <button onClick={resetAll} className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button onClick={resetAll} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 sm:py-2">
               Cancelar
             </button>
             <button
               disabled={pendingDuplicates > 0}
               onClick={applyImport}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 sm:py-2"
             >
               Aplicar importación
             </button>
           </div>
           {pendingDuplicates > 0 && (
-            <p className="mt-2 text-right text-xs text-amber-600">
+            <p className="mt-2 text-center text-xs text-amber-600 sm:text-right">
               Resuelve los duplicados pendientes en la ventana emergente para continuar.
             </p>
           )}
@@ -402,16 +435,18 @@ export default function ImportPanel({ trabajadores, onApplyImport }) {
       )}
 
       {stage === 'done' && summary && (
-        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
-          <div className="flex-1 text-sm text-emerald-800">
-            <p className="font-semibold">Importación aplicada</p>
-            <p>
-              {summary.creados} trabajador(es) nuevo(s), {summary.actualizados} actualizado(s),{' '}
-              {summary.omitidos} omitido(s).
-            </p>
+        <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-start sm:p-5">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <div className="flex-1 text-sm text-emerald-800">
+              <p className="font-semibold">Importación aplicada</p>
+              <p>
+                {summary.creados} trabajador(es) nuevo(s), {summary.actualizados} actualizado(s),{' '}
+                {summary.omitidos} omitido(s).
+              </p>
+            </div>
           </div>
-          <button onClick={resetAll} className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm hover:bg-emerald-100">
+          <button onClick={resetAll} className="shrink-0 rounded-lg bg-white px-3 py-2 text-xs font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 sm:py-1.5">
             Nueva importación
           </button>
         </div>

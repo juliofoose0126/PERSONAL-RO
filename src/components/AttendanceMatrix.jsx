@@ -10,20 +10,24 @@ import {
   currencyMX,
 } from '../utils/payroll.js';
 
+// Orden del ciclo al tocar una casilla, optimizado para velocidad: desde el
+// estado por defecto (0 = Falta), un solo toque marca "Día completo" — el
+// caso más común — antes de pasar a las opciones menos frecuentes.
+const TAP_CYCLE = [0, 1, 0.5, 'P'];
+
 function nextAttendanceValue(current) {
-  const order = ATTENDANCE_VALUES.map((v) => v.value);
-  const idx = order.findIndex((v) => v === current);
-  return order[(idx + 1) % order.length];
+  const idx = TAP_CYCLE.findIndex((v) => v === current);
+  return TAP_CYCLE[(idx + 1) % TAP_CYCLE.length];
 }
 
-function AttendanceCell({ value, onChange }) {
+function AttendanceCell({ value, onChange, block }) {
   const config = ATTENDANCE_VALUES.find((v) => v.value === value) || ATTENDANCE_VALUES[2];
   return (
     <button
       type="button"
       title={`${config.title} — clic para cambiar`}
       onClick={() => onChange(nextAttendanceValue(value))}
-      className={`h-9 w-11 rounded-md text-xs font-semibold transition ${config.className} hover:brightness-95 active:scale-95`}
+      className={`h-9 rounded-md text-xs font-semibold transition active:scale-95 ${block ? 'w-full' : 'w-11'} ${config.className} hover:brightness-95`}
     >
       {config.label}
     </button>
@@ -50,12 +54,21 @@ export default function AttendanceMatrix({ trabajadores, obras, registrosPorTrab
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {obras
         .filter((obra) => (trabajadoresPorObra.get(obra.id) || []).length > 0)
         .map((obra) => {
           const equipo = trabajadoresPorObra.get(obra.id) || [];
-          let subtotal = 0;
+          const filas = equipo.map((trabajador) => {
+            const registro = registrosPorTrabajador.get(trabajador.id);
+            const dias = registro?.dias || {};
+            const extras = registro?.extras || 0;
+            const vales = registro?.vales || 0;
+            const base = sueldoBase(dias, trabajador.sueldoDiario);
+            const neto = totalNeto({ dias, sueldoDiario: trabajador.sueldoDiario, extras, vales });
+            return { trabajador, dias, extras, vales, base, neto };
+          });
+          const subtotal = filas.reduce((acc, f) => acc + f.neto, 0);
 
           return (
             <div key={obra.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -64,7 +77,56 @@ export default function AttendanceMatrix({ trabajadores, obras, registrosPorTrab
                 <span className="text-xs text-slate-300">{equipo.length} trabajador(es)</span>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Vista de tarjetas — móvil */}
+              <div className="divide-y divide-slate-100 sm:hidden">
+                {filas.map(({ trabajador, dias, extras, vales, base, neto }) => {
+                  return (
+                    <div key={trabajador.id} className="p-4">
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-700">{trabajador.nombre}</p>
+                          <p className="text-xs text-slate-400">{trabajador.puesto || '—'} · {currencyMX(trabajador.sueldoDiario)}/día</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs text-slate-400">Días: <span className="font-semibold text-slate-600">{diasTrabajados(dias)}</span></p>
+                        </div>
+                      </div>
+
+                      <div className="mb-3 grid grid-cols-6 gap-1.5">
+                        {DAY_KEYS.map((key) => (
+                          <div key={key} className="flex flex-col items-center gap-1">
+                            <span className="text-[10px] font-medium uppercase text-slate-400">{DAY_LABELS[key]}</span>
+                            <AttendanceCell block value={dias[key] ?? 0} onChange={(val) => onSetDia(trabajador.id, key, val)} />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mb-3 grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Extras (+)</span>
+                          <MoneyStepper value={extras} onChange={(v) => onSetMonto(trabajador.id, 'extras', v)} tone="emerald" block />
+                        </div>
+                        <div>
+                          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Vales (-)</span>
+                          <MoneyStepper value={vales} onChange={(v) => onSetMonto(trabajador.id, 'vales', v)} tone="rose" block />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                        <span className="text-xs text-slate-500">Sueldo base {currencyMX(base)}</span>
+                        <span className="font-bold text-slate-800">{currencyMX(neto)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between bg-slate-50 px-4 py-3 font-semibold text-slate-700">
+                  <span>Subtotal {obra.nombre}</span>
+                  <span>{currencyMX(subtotal)}</span>
+                </div>
+              </div>
+
+              {/* Vista de tabla — escritorio */}
+              <div className="hidden overflow-x-auto sm:block">
                 <table className="w-full min-w-[880px] border-collapse text-sm">
                   <thead>
                     <tr className="bg-slate-50 text-slate-500">
@@ -81,15 +143,7 @@ export default function AttendanceMatrix({ trabajadores, obras, registrosPorTrab
                     </tr>
                   </thead>
                   <tbody>
-                    {equipo.map((trabajador) => {
-                      const registro = registrosPorTrabajador.get(trabajador.id);
-                      const dias = registro?.dias || {};
-                      const extras = registro?.extras || 0;
-                      const vales = registro?.vales || 0;
-                      const base = sueldoBase(dias, trabajador.sueldoDiario);
-                      const neto = totalNeto({ dias, sueldoDiario: trabajador.sueldoDiario, extras, vales });
-                      subtotal += neto;
-
+                    {filas.map(({ trabajador, dias, extras, vales, base, neto }) => {
                       return (
                         <tr key={trabajador.id} className="border-t border-slate-100 hover:bg-slate-50/60">
                           <td className="sticky left-0 z-10 bg-white px-3 py-2 font-medium text-slate-700">
@@ -137,14 +191,14 @@ export default function AttendanceMatrix({ trabajadores, obras, registrosPorTrab
   );
 }
 
-function MoneyStepper({ value, onChange, tone }) {
+function MoneyStepper({ value, onChange, tone, block }) {
   const toneClass = tone === 'emerald' ? 'text-emerald-600' : 'text-rose-600';
   return (
-    <div className="flex items-center gap-1">
+    <div className={`flex items-center gap-1 ${block ? 'w-full' : ''}`}>
       <button
         type="button"
         onClick={() => onChange(Math.max(0, (Number(value) || 0) - 50))}
-        className="rounded bg-slate-100 p-1 text-slate-500 hover:bg-slate-200"
+        className={`shrink-0 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 ${block ? 'p-2' : 'p-1'}`}
       >
         <Minus className="h-3 w-3" />
       </button>
@@ -154,12 +208,12 @@ function MoneyStepper({ value, onChange, tone }) {
         step="10"
         value={value || 0}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
-        className={`w-16 rounded border border-slate-200 px-1 py-1 text-right text-xs ${toneClass}`}
+        className={`rounded border border-slate-200 text-right text-xs ${toneClass} ${block ? 'w-full flex-1 py-2 px-1.5' : 'w-16 px-1 py-1'}`}
       />
       <button
         type="button"
         onClick={() => onChange((Number(value) || 0) + 50)}
-        className="rounded bg-slate-100 p-1 text-slate-500 hover:bg-slate-200"
+        className={`shrink-0 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 ${block ? 'p-2' : 'p-1'}`}
       >
         <Plus className="h-3 w-3" />
       </button>
