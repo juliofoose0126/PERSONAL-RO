@@ -1,8 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Users, Plus, Trash2, Pencil, Check, X, Search, ChevronDown, IdCard } from 'lucide-react';
+import { Users, Plus, Trash2, Pencil, Check, X, Search, ChevronDown, IdCard, HardHat } from 'lucide-react';
 import { currencyMX, DAY_KEYS } from '../utils/payroll.js';
 
-const emptyForm = { nombre: '', obraId: '', puesto: '', sueldoSemanal: '' };
+const emptyForm = { nombre: '', obraId: '', puesto: '', sueldoSemanal: '', esCabo: false, caboId: '' };
 
 const round2 = (n) => Math.round(n * 100) / 100;
 // El foreman captura el sueldo SEMANAL; la app lo divide entre los días
@@ -19,6 +19,12 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
   const [expandedId, setExpandedId] = useState(null);
 
   const obraNombre = (id) => obras.find((o) => o.id === id)?.nombre || 'Sin obra';
+  const caboNombre = (id) => trabajadores.find((t) => t.id === id)?.nombre || '';
+
+  const cabosActivos = useMemo(
+    () => trabajadores.filter((t) => t.esCabo && t.activo !== false).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+    [trabajadores]
+  );
 
   const filtrados = useMemo(() => {
     return trabajadores
@@ -36,13 +42,22 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
       puesto: form.puesto.trim(),
       sueldoDiario: sueldoDiarioDeSemanal(form.sueldoSemanal),
       activo: true,
+      esCabo: form.esCabo,
+      caboId: form.esCabo ? null : form.caboId || null,
     });
     setForm(emptyForm);
   };
 
   const startEdit = (t) => {
     setEditId(t.id);
-    setEditForm({ nombre: t.nombre, obraId: t.obraId, puesto: t.puesto || '', sueldoSemanal: sueldoSemanalDeDiario(t.sueldoDiario) });
+    setEditForm({
+      nombre: t.nombre,
+      obraId: t.obraId,
+      puesto: t.puesto || '',
+      sueldoSemanal: sueldoSemanalDeDiario(t.sueldoDiario),
+      esCabo: !!t.esCabo,
+      caboId: t.caboId || '',
+    });
   };
 
   const saveEdit = () => {
@@ -51,6 +66,8 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
       obraId: editForm.obraId,
       puesto: editForm.puesto.trim(),
       sueldoDiario: sueldoDiarioDeSemanal(editForm.sueldoSemanal),
+      esCabo: editForm.esCabo,
+      caboId: editForm.esCabo ? null : editForm.caboId || null,
     });
     setEditId(null);
   };
@@ -101,6 +118,31 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
             <p className="mt-1 text-[11px] text-slate-400">= {currencyMX(sueldoDiarioDeSemanal(form.sueldoSemanal))}/día</p>
           )}
         </div>
+
+        <div className="flex flex-col gap-2 sm:col-span-5 sm:flex-row sm:items-center sm:gap-4">
+          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={form.esCabo}
+              onChange={(e) => setForm({ ...form, esCabo: e.target.checked, caboId: '' })}
+              className="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-500"
+            />
+            ¿Es Cabo / Encargado?
+          </label>
+          {!form.esCabo && (
+            <select
+              value={form.caboId}
+              onChange={(e) => setForm({ ...form, caboId: e.target.value })}
+              className="flex-1 rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
+            >
+              <option value="">Sin cabo asignado (pago directo)</option>
+              {cabosActivos.map((c) => (
+                <option key={c.id} value={c.id}>Cuadrilla de {c.nombre}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <button
           type="submit"
           className="inline-flex items-center justify-center gap-1 rounded-lg bg-slate-800 px-3 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700 active:scale-[0.99] sm:col-span-5 sm:py-2"
@@ -176,6 +218,29 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                     )}
                   </div>
                 </div>
+
+                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editForm.esCabo}
+                    onChange={(e) => setEditForm({ ...editForm, esCabo: e.target.checked, caboId: '' })}
+                    className="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-500"
+                  />
+                  ¿Es Cabo / Encargado?
+                </label>
+                {!editForm.esCabo && (
+                  <select
+                    value={editForm.caboId}
+                    onChange={(e) => setEditForm({ ...editForm, caboId: e.target.value })}
+                    className="w-full rounded border border-sky-300 px-3 py-2.5 text-sm"
+                  >
+                    <option value="">Sin cabo asignado (pago directo)</option>
+                    {cabosActivos.filter((c) => c.id !== editId).map((c) => (
+                      <option key={c.id} value={c.id}>Cuadrilla de {c.nombre}</option>
+                    ))}
+                  </select>
+                )}
+
                 <div className="flex gap-2 pt-1">
                   <button onClick={saveEdit} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white">
                     <Check className="h-4 w-4" /> Guardar
@@ -198,11 +263,19 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="truncate font-medium text-slate-700">{t.nombre}</span>
+                        {t.esCabo && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
+                            <HardHat className="h-2.5 w-2.5" /> Cabo
+                          </span>
+                        )}
                         {t.imss?.estatus === 'BAJA' && (
                           <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500">BAJA</span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400">{obraNombre(t.obraId)} · {t.puesto || '—'}</p>
+                      <p className="text-xs text-slate-400">
+                        {obraNombre(t.obraId)} · {t.puesto || '—'}
+                        {!t.esCabo && t.caboId && <> · Cuadrilla de {caboNombre(t.caboId) || '—'}</>}
+                      </p>
                     </div>
                   </button>
                   <div className="flex shrink-0 items-center gap-2">
@@ -250,6 +323,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
               <th className="py-2 pr-2">Nombre</th>
               <th className="py-2 pr-2">Obra</th>
               <th className="py-2 pr-2">Puesto</th>
+              <th className="py-2 pr-2">Cabo</th>
               <th className="py-2 pr-2 text-right">Sueldo diario</th>
               <th className="py-2 pr-2"></th>
             </tr>
@@ -284,6 +358,29 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                         onChange={(e) => setEditForm({ ...editForm, puesto: e.target.value })}
                         className="w-full rounded border border-sky-300 px-2 py-1"
                       />
+                    </td>
+                    <td className="py-1.5 pr-2">
+                      <label className="mb-1 inline-flex items-center gap-1 text-xs text-slate-600">
+                        <input
+                          type="checkbox"
+                          checked={editForm.esCabo}
+                          onChange={(e) => setEditForm({ ...editForm, esCabo: e.target.checked, caboId: '' })}
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-slate-800 focus:ring-slate-500"
+                        />
+                        Cabo
+                      </label>
+                      {!editForm.esCabo && (
+                        <select
+                          value={editForm.caboId}
+                          onChange={(e) => setEditForm({ ...editForm, caboId: e.target.value })}
+                          className="w-full rounded border border-sky-300 px-1.5 py-1 text-xs"
+                        >
+                          <option value="">Sin cabo</option>
+                          {cabosActivos.filter((c) => c.id !== editId).map((c) => (
+                            <option key={c.id} value={c.id}>{c.nombre}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="py-1.5 pr-2">
                       <input
@@ -327,6 +424,17 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                     </td>
                     <td className="py-2 pr-2 text-slate-500">{obraNombre(t.obraId)}</td>
                     <td className="py-2 pr-2 text-slate-500">{t.puesto || '—'}</td>
+                    <td className="py-2 pr-2 text-slate-500">
+                      {t.esCabo ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600">
+                          <HardHat className="h-3 w-3" /> Cabo
+                        </span>
+                      ) : t.caboId ? (
+                        caboNombre(t.caboId) || '—'
+                      ) : (
+                        <span className="text-slate-400">Sin cabo</span>
+                      )}
+                    </td>
                     <td className="py-2 pr-2 text-right text-slate-600">{currencyMX(t.sueldoDiario)}</td>
                     <td className="py-2">
                       <div className="flex justify-end gap-1">
@@ -343,7 +451,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
               </tr>
               {expandedId === t.id && t.imss && (
                 <tr className="animate-fade-in border-b border-slate-50 bg-slate-50/70">
-                  <td colSpan={5} className="px-3 py-3">
+                  <td colSpan={6} className="px-3 py-3">
                     <div className="flex items-start gap-2">
                       <IdCard className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                       <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-4">
