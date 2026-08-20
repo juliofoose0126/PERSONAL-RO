@@ -10,10 +10,14 @@ import {
   currencyMX,
 } from '../utils/payroll.js';
 
+// Orden del ciclo al tocar una casilla, optimizado para velocidad: desde el
+// estado por defecto (0 = Falta), un solo toque marca "Día completo" — el
+// caso más común — antes de pasar a las opciones menos frecuentes.
+const TAP_CYCLE = [0, 1, 0.5, 'P'];
+
 function nextAttendanceValue(current) {
-  const order = ATTENDANCE_VALUES.map((v) => v.value);
-  const idx = order.findIndex((v) => v === current);
-  return order[(idx + 1) % order.length];
+  const idx = TAP_CYCLE.findIndex((v) => v === current);
+  return TAP_CYCLE[(idx + 1) % TAP_CYCLE.length];
 }
 
 function AttendanceCell({ value, onChange, block }) {

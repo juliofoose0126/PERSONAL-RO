@@ -1,8 +1,14 @@
 import { Fragment, useMemo, useState } from 'react';
 import { Users, Plus, Trash2, Pencil, Check, X, Search, ChevronDown, IdCard } from 'lucide-react';
-import { currencyMX } from '../utils/payroll.js';
+import { currencyMX, DAY_KEYS } from '../utils/payroll.js';
 
-const emptyForm = { nombre: '', obraId: '', puesto: '', sueldoDiario: '' };
+const emptyForm = { nombre: '', obraId: '', puesto: '', sueldoSemanal: '' };
+
+const round2 = (n) => Math.round(n * 100) / 100;
+// El foreman captura el sueldo SEMANAL; la app lo divide entre los días
+// laborales (Lun–Sáb) para obtener el sueldo diario que usan los cálculos.
+const sueldoDiarioDeSemanal = (semanal) => round2((Number(semanal) || 0) / DAY_KEYS.length);
+const sueldoSemanalDeDiario = (diario) => (diario ? round2(Number(diario) * DAY_KEYS.length) : '');
 
 export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onDelete }) {
   const [form, setForm] = useState(emptyForm);
@@ -28,7 +34,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
       nombre: form.nombre.trim(),
       obraId: form.obraId,
       puesto: form.puesto.trim(),
-      sueldoDiario: Number(form.sueldoDiario) || 0,
+      sueldoDiario: sueldoDiarioDeSemanal(form.sueldoSemanal),
       activo: true,
     });
     setForm(emptyForm);
@@ -36,7 +42,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
 
   const startEdit = (t) => {
     setEditId(t.id);
-    setEditForm({ nombre: t.nombre, obraId: t.obraId, puesto: t.puesto || '', sueldoDiario: t.sueldoDiario });
+    setEditForm({ nombre: t.nombre, obraId: t.obraId, puesto: t.puesto || '', sueldoSemanal: sueldoSemanalDeDiario(t.sueldoDiario) });
   };
 
   const saveEdit = () => {
@@ -44,7 +50,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
       nombre: editForm.nombre.trim(),
       obraId: editForm.obraId,
       puesto: editForm.puesto.trim(),
-      sueldoDiario: Number(editForm.sueldoDiario) || 0,
+      sueldoDiario: sueldoDiarioDeSemanal(editForm.sueldoSemanal),
     });
     setEditId(null);
   };
@@ -82,14 +88,19 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
           onChange={(e) => setForm({ ...form, puesto: e.target.value })}
           className="rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
         />
-        <input
-          type="number"
-          min="0"
-          placeholder="Sueldo diario"
-          value={form.sueldoDiario}
-          onChange={(e) => setForm({ ...form, sueldoDiario: e.target.value })}
-          className="rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
-        />
+        <div>
+          <input
+            type="number"
+            min="0"
+            placeholder="Sueldo semanal"
+            value={form.sueldoSemanal}
+            onChange={(e) => setForm({ ...form, sueldoSemanal: e.target.value })}
+            className="w-full rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
+          />
+          {!!Number(form.sueldoSemanal) && (
+            <p className="mt-1 text-[11px] text-slate-400">= {currencyMX(sueldoDiarioDeSemanal(form.sueldoSemanal))}/día</p>
+          )}
+        </div>
         <button
           type="submit"
           className="inline-flex items-center justify-center gap-1 rounded-lg bg-slate-800 px-3 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700 active:scale-[0.99] sm:col-span-5 sm:py-2"
@@ -152,13 +163,18 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                     className="rounded border border-sky-300 px-3 py-2.5 text-sm"
                     placeholder="Puesto"
                   />
-                  <input
-                    type="number"
-                    value={editForm.sueldoDiario}
-                    onChange={(e) => setEditForm({ ...editForm, sueldoDiario: e.target.value })}
-                    className="rounded border border-sky-300 px-3 py-2.5 text-right text-sm"
-                    placeholder="Sueldo diario"
-                  />
+                  <div>
+                    <input
+                      type="number"
+                      value={editForm.sueldoSemanal}
+                      onChange={(e) => setEditForm({ ...editForm, sueldoSemanal: e.target.value })}
+                      className="w-full rounded border border-sky-300 px-3 py-2.5 text-right text-sm"
+                      placeholder="Sueldo semanal"
+                    />
+                    {!!Number(editForm.sueldoSemanal) && (
+                      <p className="mt-1 text-right text-[11px] text-slate-400">= {currencyMX(sueldoDiarioDeSemanal(editForm.sueldoSemanal))}/día</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button onClick={saveEdit} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white">
@@ -272,10 +288,14 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                     <td className="py-1.5 pr-2">
                       <input
                         type="number"
-                        value={editForm.sueldoDiario}
-                        onChange={(e) => setEditForm({ ...editForm, sueldoDiario: e.target.value })}
+                        value={editForm.sueldoSemanal}
+                        onChange={(e) => setEditForm({ ...editForm, sueldoSemanal: e.target.value })}
+                        title="Sueldo semanal"
                         className="w-24 rounded border border-sky-300 px-2 py-1 text-right"
                       />
+                      {!!Number(editForm.sueldoSemanal) && (
+                        <p className="mt-0.5 text-right text-[10px] text-slate-400">= {currencyMX(sueldoDiarioDeSemanal(editForm.sueldoSemanal))}/día</p>
+                      )}
                     </td>
                     <td className="flex gap-1 py-1.5">
                       <button onClick={saveEdit} className="rounded p-1.5 text-emerald-600 hover:bg-emerald-50">
