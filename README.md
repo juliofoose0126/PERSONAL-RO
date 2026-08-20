@@ -1,30 +1,32 @@
 # Nómina de Obra
 
-Aplicación web para control de asistencia, importación inteligente con
-deduplicación y generación de nómina semanal de obra.
+Aplicación web para control de asistencia y generación de nómina semanal de
+obra, con cuadrillas organizadas por Cabo/Encargado.
 
 ## Funcionalidades
 
-- **Importación inteligente**: Excel/CSV/PDF con mapeo automático de columnas,
-  y fotos/capturas con un hook enchufable para OCR/Vision API
-  (`src/utils/importers/imageImporter.js`).
-- **Deduplicación inteligente**: normalización de texto + comparación difusa
-  (Levenshtein + token set) para detectar trabajadores repetidos, con un modal
-  para fusionar, crear como nuevo u omitir.
 - **Pase de lista semanal** (Lun-Sáb) con valores 1.0 / 0.5 / 0 / Permiso,
-  agrupado por obra con subtotales.
+  agrupado por obra con subtotales. Un toque marca "Día completo" desde el
+  estado por defecto.
+- **Cabos y Cuadrillas**: cada trabajador puede marcarse como Cabo/Encargado
+  o asignarse a la cuadrilla de un cabo; el resumen de Nómina permite ver el
+  total por Obra o por Cabo (con el total a entregarle para que reparta).
+- **Sueldo semanal**: se captura el sueldo semanal y la app lo divide entre
+  los 6 días laborales para calcular el sueldo diario.
 - **Cálculos automáticos**: sueldo base, extras, vales/anticipos y total neto.
 - **Exportación a Excel** (.xlsx) con encabezado, orden alfabético por
   obra/nombre, formato de moneda, totales con fórmulas `SUM` y hoja de resumen
   por obra.
+- **Respaldo y restauración**: descarga/carga un `.json` con todos los datos,
+  útil porque la app persiste en `localStorage` (atado al dominio exacto
+  desde el que se abre).
 - **Persistencia** en `localStorage` (obras, trabajadores y semanas
   históricas).
 - Botón **"Cargar datos de ejemplo"** con 3 obras y 6 trabajadores.
 
 ## Stack
 
-React 19 + Vite + Tailwind CSS v4 + Lucide Icons + ExcelJS + SheetJS (`xlsx`)
-+ pdfjs-dist + file-saver.
+React 19 + Vite + Tailwind CSS v4 + Lucide Icons + ExcelJS + file-saver.
 
 ## Desarrollo
 
@@ -34,27 +36,3 @@ npm run dev      # servidor de desarrollo
 npm run build    # build de producción
 npm run lint     # oxlint
 ```
-
-## Conectar un proveedor de OCR/Vision
-
-La importación de fotos no incluye un motor OCR embebido. Para habilitarla,
-conecta cualquier servicio (Google Vision, AWS Textract, Tesseract.js, un
-endpoint propio, etc.) en `src/utils/importers/imageImporter.js`:
-
-```js
-import { setOcrProvider } from './src/utils/importers/imageImporter.js';
-
-setOcrProvider(async (file) => {
-  const texto = await miServicioDeVision(file);
-  return texto; // string con el texto detectado
-});
-```
-
-## Nota sobre dependencias
-
-El paquete `xlsx` (SheetJS) usado para leer Excel/CSV tiene advisories de
-seguridad conocidos (prototype pollution / ReDoS) sin parche publicado en
-npm. El riesgo es acotado porque solo procesa archivos que el propio usuario
-sube en su navegador, pero si esto es una preocupación en tu despliegue,
-evalúa instalar la build oficial parcheada desde el CDN de SheetJS
-(`https://cdn.sheetjs.com`) en lugar del paquete de npm.
