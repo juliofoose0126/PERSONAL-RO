@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   ClipboardList,
@@ -11,10 +11,13 @@ import {
   Trash2,
   CalendarPlus,
   Download,
+  Menu,
+  X,
 } from 'lucide-react';
 
 import { usePersistentState, STORAGE_KEYS } from './utils/storage.js';
 import { getSampleDataset } from './data/sampleData.js';
+import { REAL_OBRAS, REAL_TRABAJADORES } from './data/personalReal.js';
 import {
   createEmptyWeek,
   createEmptyRegistro,
@@ -41,14 +44,37 @@ const TABS = [
 ];
 
 export default function App() {
-  const [obras, setObras] = usePersistentState(STORAGE_KEYS.obras, []);
-  const [trabajadores, setTrabajadores] = usePersistentState(STORAGE_KEYS.trabajadores, []);
+  const [obras, setObras] = usePersistentState(STORAGE_KEYS.obras, REAL_OBRAS);
+  const [trabajadores, setTrabajadores] = usePersistentState(STORAGE_KEYS.trabajadores, REAL_TRABAJADORES);
   const [semanas, setSemanas] = usePersistentState(STORAGE_KEYS.semanas, []);
   const [currentWeekId, setCurrentWeekId] = usePersistentState(STORAGE_KEYS.currentWeekId, null);
 
   const [activeTab, setActiveTab] = useState('importar');
   const [filtroObra, setFiltroObra] = useState('todas');
   const [exporting, setExporting] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const tabRefs = useRef({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0, ready: false });
+
+  useLayoutEffect(() => {
+    const btn = tabRefs.current[activeTab];
+    if (btn) setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth, ready: true });
+  }, [activeTab]);
+
+  useEffect(() => {
+    function syncIndicator() {
+      const btn = tabRefs.current[activeTab];
+      if (btn) setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth, ready: true });
+    }
+    window.addEventListener('resize', syncIndicator);
+    return () => window.removeEventListener('resize', syncIndicator);
+  }, [activeTab]);
+
+  function selectTab(id) {
+    setActiveTab(id);
+    setMobileMenuOpen(false);
+  }
 
   const currentWeek = useMemo(() => {
     return semanas.find((s) => s.id === currentWeekId) || semanas[0] || null;
@@ -257,44 +283,114 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 text-white">
-              <HardHat className="h-6 w-6" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-600 text-white shadow-md shadow-slate-800/20 transition-transform duration-300 hover:scale-105 sm:h-11 sm:w-11">
+              <HardHat className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight text-slate-800">Nómina de Obra</h1>
-              <p className="text-xs text-slate-500">Asistencia, importación y nómina semanal</p>
+              <h1 className="text-base font-bold leading-tight tracking-tight text-slate-800 sm:text-lg">Nómina de Obra</h1>
+              <p className="hidden text-xs text-slate-500 sm:block">Asistencia, importación y nómina semanal</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden flex-wrap items-center gap-2 sm:flex">
             <button
               onClick={cargarDatosEjemplo}
-              className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm font-medium text-sky-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-100 hover:shadow-sm active:translate-y-0"
             >
               <Sparkles className="h-4 w-4" /> Cargar datos de ejemplo
             </button>
             <button
               onClick={limpiarTodo}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-700 hover:shadow-sm active:translate-y-0"
             >
               <Trash2 className="h-4 w-4" /> Borrar todo
             </button>
           </div>
+
+          <button
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={mobileMenuOpen}
+            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors duration-200 hover:bg-slate-100 sm:hidden"
+          >
+            <Menu className={`absolute h-5 w-5 transition-all duration-200 ${mobileMenuOpen ? 'rotate-90 opacity-0' : 'rotate-0 opacity-100'}`} />
+            <X className={`absolute h-5 w-5 transition-all duration-200 ${mobileMenuOpen ? 'rotate-0 opacity-100' : '-rotate-90 opacity-0'}`} />
+          </button>
         </div>
 
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6">
+        {mobileMenuOpen && (
+          <div className="animate-slide-down border-t border-slate-200/80 bg-white px-4 pb-4 pt-2 sm:hidden">
+            <div className="flex flex-col gap-1">
+              {TABS.map((tab, i) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => selectTab(tab.id)}
+                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`animate-fade-in-up flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${
+                      active ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" /> {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
+              <button
+                onClick={() => { cargarDatosEjemplo(); setMobileMenuOpen(false); }}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100"
+              >
+                <Sparkles className="h-4 w-4" /> Cargar datos de ejemplo
+              </button>
+              <button
+                onClick={() => { limpiarTodo(); setMobileMenuOpen(false); }}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50"
+              >
+                <Trash2 className="h-4 w-4" /> Borrar todo
+              </button>
+            </div>
+          </div>
+        )}
+
+        <nav className="relative mx-auto hidden max-w-7xl gap-1 overflow-x-auto px-4 pb-2 sm:flex sm:px-6">
+          <div
+            className="absolute bottom-2 h-9 rounded-lg bg-slate-800 shadow-sm transition-all duration-300 ease-out"
+            style={{ left: indicator.left, width: indicator.width, opacity: indicator.ready ? 1 : 0 }}
+          />
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
+                ref={(el) => { tabRefs.current[tab.id] = el; }}
+                onClick={() => selectTab(tab.id)}
+                className={`relative z-10 inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                  active ? 'text-white' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Icon className="h-4 w-4" /> {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <nav className="flex gap-1 overflow-x-auto px-4 pb-2 sm:hidden">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => selectTab(tab.id)}
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                   active ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
@@ -305,7 +401,7 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main key={activeTab} className="animate-fade-in-up mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <WeekBar
           semanas={semanas}
           currentWeek={currentWeek}

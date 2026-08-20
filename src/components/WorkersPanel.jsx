@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Users, Plus, Trash2, Pencil, Check, X, Search } from 'lucide-react';
+import { Fragment, useMemo, useState } from 'react';
+import { Users, Plus, Trash2, Pencil, Check, X, Search, ChevronDown, IdCard } from 'lucide-react';
 import { currencyMX } from '../utils/payroll.js';
 
 const emptyForm = { nombre: '', obraId: '', puesto: '', sueldoDiario: '' };
@@ -10,6 +10,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
   const [editForm, setEditForm] = useState(emptyForm);
   const [busqueda, setBusqueda] = useState('');
   const [filtroObra, setFiltroObra] = useState('todas');
+  const [expandedId, setExpandedId] = useState(null);
 
   const obraNombre = (id) => obras.find((o) => o.id === id)?.nombre || 'Sin obra';
 
@@ -129,7 +130,8 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
           </thead>
           <tbody>
             {filtrados.map((t) => (
-              <tr key={t.id} className="border-b border-slate-50 hover:bg-slate-50/60">
+              <Fragment key={t.id}>
+              <tr className="border-b border-slate-50 hover:bg-slate-50/60">
                 {editId === t.id ? (
                   <>
                     <td className="py-1.5 pr-2">
@@ -176,7 +178,23 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                   </>
                 ) : (
                   <>
-                    <td className="py-2 pr-2 font-medium text-slate-700">{t.nombre}</td>
+                    <td className="py-2 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        {t.imss && (
+                          <button
+                            onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                            className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                            title="Ver datos IMSS"
+                          >
+                            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${expandedId === t.id ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
+                        <span className="font-medium text-slate-700">{t.nombre}</span>
+                        {t.imss?.estatus === 'BAJA' && (
+                          <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500">BAJA</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-2 pr-2 text-slate-500">{obraNombre(t.obraId)}</td>
                     <td className="py-2 pr-2 text-slate-500">{t.puesto || '—'}</td>
                     <td className="py-2 pr-2 text-right text-slate-600">{currencyMX(t.sueldoDiario)}</td>
@@ -193,6 +211,29 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                   </>
                 )}
               </tr>
+              {expandedId === t.id && t.imss && (
+                <tr className="animate-fade-in border-b border-slate-50 bg-slate-50/70">
+                  <td colSpan={5} className="px-3 py-3">
+                    <div className="flex items-start gap-2">
+                      <IdCard className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                      <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-4">
+                        <Dato label="NSS" value={t.imss.nss} />
+                        <Dato label="RFC" value={t.imss.rfc} />
+                        <Dato label="CURP" value={t.imss.curp} />
+                        <Dato label="Registro patronal" value={t.imss.registroPatronal} />
+                        <Dato label="Fecha inicio" value={t.imss.fechaInicio} />
+                        <Dato label="Fecha baja" value={t.imss.fechaBaja} />
+                        <Dato label="Estatus" value={t.imss.estatus} />
+                        <Dato
+                          label="Documentos"
+                          value={`INE:${t.imss.documentos?.ine || '—'} · CURP:${t.imss.documentos?.curp || '—'} · CSF:${t.imss.documentos?.csf || '—'}`}
+                        />
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -200,6 +241,15 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
           <p className="py-6 text-center text-sm text-slate-400">No hay trabajadores que coincidan.</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function Dato({ label, value }) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-slate-600">{value || '—'}</div>
     </div>
   );
 }
