@@ -18,27 +18,6 @@ export const ATTENDANCE_VALUES = [
   { value: 'P', label: 'P', title: 'Permiso', className: 'bg-sky-100 text-sky-700' },
 ];
 
-// Distribuye un total de días trabajados (proveniente de una importación que
-// no trae el detalle día a día) en la matriz semanal Lun-Sáb, de forma
-// determinista: llena días completos de izquierda a derecha y, si sobra
-// una fracción de 0.5, la coloca en el siguiente día disponible.
-export function distributeDaysAcrossWeek(totalDias) {
-  const dias = emptyWeekDays();
-  let restante = Math.max(0, Math.min(Number(totalDias) || 0, DAY_KEYS.length));
-
-  for (const key of DAY_KEYS) {
-    if (restante <= 0) break;
-    if (restante >= 1) {
-      dias[key] = 1;
-      restante -= 1;
-    } else {
-      dias[key] = 0.5;
-      restante -= 0.5;
-    }
-  }
-  return dias;
-}
-
 export function emptyWeekDays() {
   return DAY_KEYS.reduce((acc, key) => {
     acc[key] = 0;

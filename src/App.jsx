@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   ClipboardList,
-  Upload,
   Users,
   Building2,
   Wallet,
@@ -23,23 +22,19 @@ import { REAL_OBRAS, REAL_TRABAJADORES } from './data/personalReal.js';
 import {
   createEmptyWeek,
   createEmptyRegistro,
-  distributeDaysAcrossWeek,
   addDays,
   getMonday,
   groupByObra,
   groupByCabo,
   currencyMX,
 } from './utils/payroll.js';
-import { normalizeText, nameSimilarity } from './utils/normalize.js';
 import { exportNominaToExcel } from './utils/excelExport.js';
 
-import ImportPanel from './components/ImportPanel.jsx';
 import AttendanceMatrix from './components/AttendanceMatrix.jsx';
 import WorkersPanel from './components/WorkersPanel.jsx';
 import ObrasPanel from './components/ObrasPanel.jsx';
 
 const TABS = [
-  { id: 'importar', label: 'Importar', icon: Upload },
   { id: 'asistencia', label: 'Asistencia', icon: ClipboardList },
   { id: 'trabajadores', label: 'Trabajadores', icon: Users },
   { id: 'obras', label: 'Obras', icon: Building2 },
@@ -52,7 +47,7 @@ export default function App() {
   const [semanas, setSemanas] = usePersistentState(STORAGE_KEYS.semanas, []);
   const [currentWeekId, setCurrentWeekId] = usePersistentState(STORAGE_KEYS.currentWeekId, null);
 
-  const [activeTab, setActiveTab] = useState('importar');
+  const [activeTab, setActiveTab] = useState('asistencia');
   const [filtroObra, setFiltroObra] = useState('todas');
   const [exporting, setExporting] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -250,78 +245,6 @@ export default function App() {
     reader.readAsText(file);
   }
 
-  // ---------- Importación inteligente ----------
-  function applyImportBatch(items) {
-    const obrasLocal = [...obras];
-    let trabajadoresLocal = [...trabajadores];
-    const week = ensureCurrentWeek();
-    const registrosMap = new Map((week.registros || []).map((r) => [r.trabajadorId, { ...r }]));
-
-    let creados = 0;
-    let actualizados = 0;
-    let omitidos = 0;
-
-    function findOrCreateObra(nombreTexto) {
-      const norm = normalizeText(nombreTexto);
-      let found = obrasLocal.find((o) => normalizeText(o.nombre) === norm);
-      if (!found) found = obrasLocal.find((o) => nameSimilarity(o.nombre, nombreTexto) >= 0.85);
-      if (found) return found.id;
-      const nueva = { id: uuidv4(), nombre: nombreTexto.trim() };
-      obrasLocal.push(nueva);
-      return nueva.id;
-    }
-
-    for (const item of items) {
-      const { record, decision, match } = item;
-      if (!decision || decision === 'skip') {
-        omitidos++;
-        continue;
-      }
-
-      let trabajadorId;
-      if (decision === 'merge' && match) {
-        trabajadorId = match.id;
-        const patch = {};
-        if (record.puesto) patch.puesto = record.puesto;
-        if (record.sueldoDiario) patch.sueldoDiario = record.sueldoDiario;
-        if (record.obra) patch.obraId = findOrCreateObra(record.obra);
-        trabajadoresLocal = trabajadoresLocal.map((t) => (t.id === trabajadorId ? { ...t, ...patch } : t));
-        actualizados++;
-      } else {
-        const obraId = record.obra
-          ? findOrCreateObra(record.obra)
-          : obrasLocal[0]?.id || findOrCreateObra('Sin obra asignada');
-        const nuevo = {
-          id: uuidv4(),
-          nombre: record.nombre,
-          obraId,
-          puesto: record.puesto || '',
-          sueldoDiario: record.sueldoDiario || 0,
-          activo: true,
-        };
-        trabajadoresLocal.push(nuevo);
-        trabajadorId = nuevo.id;
-        creados++;
-      }
-
-      if (record.diasTrabajados || record.extras || record.anticipos) {
-        const previo = registrosMap.get(trabajadorId);
-        registrosMap.set(trabajadorId, {
-          trabajadorId,
-          dias: record.diasTrabajados ? distributeDaysAcrossWeek(record.diasTrabajados) : previo?.dias || createEmptyRegistro(trabajadorId).dias,
-          extras: record.extras || previo?.extras || 0,
-          vales: record.anticipos || previo?.vales || 0,
-        });
-      }
-    }
-
-    setObras(obrasLocal);
-    setTrabajadores(trabajadoresLocal);
-    setSemanas((prev) => prev.map((s) => (s.id === week.id ? { ...s, registros: Array.from(registrosMap.values()) } : s)));
-
-    return { creados, actualizados, omitidos };
-  }
-
   // ---------- Exportar Excel ----------
   async function handleExport() {
     if (!currentWeek || currentWeek.registros.length === 0) {
@@ -349,7 +272,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-base font-bold leading-tight tracking-tight text-slate-800 sm:text-lg">Nómina de Obra</h1>
-              <p className="hidden text-xs text-slate-500 sm:block">Asistencia, importación y nómina semanal</p>
+              <p className="hidden text-xs text-slate-500 sm:block">Asistencia y nómina semanal</p>
             </div>
           </div>
 
@@ -471,10 +394,6 @@ export default function App() {
           obras={obras}
           showFiltro={activeTab === 'asistencia'}
         />
-
-        {activeTab === 'importar' && (
-          <ImportPanel trabajadores={trabajadores} onApplyImport={applyImportBatch} />
-        )}
 
         {activeTab === 'asistencia' && (
           <AttendanceMatrix
