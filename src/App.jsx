@@ -323,35 +323,19 @@ export default function App() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="animate-slide-down border-t border-slate-200/80 bg-white px-4 pb-4 pt-2 sm:hidden">
-            <div className="flex flex-col gap-1">
-              {TABS.map((tab, i) => {
-                const Icon = tab.icon;
-                const active = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => selectTab(tab.id)}
-                    style={{ animationDelay: `${i * 30}ms` }}
-                    className={`animate-fade-in-up flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${
-                      active ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" /> {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
+          <div className="animate-slide-down border-t border-slate-200/80 bg-white px-4 pb-4 pt-3 sm:hidden">
+            <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Acciones rápidas</p>
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => { cargarDatosEjemplo(); setMobileMenuOpen(false); }}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100"
+                className="animate-fade-in-up inline-flex items-center justify-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-3 text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100"
               >
                 <Sparkles className="h-4 w-4" /> Cargar datos de ejemplo
               </button>
               <button
                 onClick={() => { limpiarTodo(); setMobileMenuOpen(false); }}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50"
+                style={{ animationDelay: '30ms' }}
+                className="animate-fade-in-up inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50"
               >
                 <Trash2 className="h-4 w-4" /> Borrar todo
               </button>
@@ -381,27 +365,9 @@ export default function App() {
             );
           })}
         </nav>
-
-        <nav className="flex gap-1 overflow-x-auto px-4 pb-2 sm:hidden">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => selectTab(tab.id)}
-                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                  active ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className="h-4 w-4" /> {tab.label}
-              </button>
-            );
-          })}
-        </nav>
       </header>
 
-      <main key={activeTab} className="animate-fade-in-up mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main key={activeTab} className="animate-fade-in-up mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 sm:pb-6">
         <WeekBar
           semanas={semanas}
           currentWeek={currentWeek}
@@ -456,6 +422,31 @@ export default function App() {
           />
         )}
       </main>
+
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md sm:hidden">
+        <div className="flex items-stretch justify-between px-1 pt-1">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => selectTab(tab.id)}
+                className="relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium transition-colors duration-150"
+              >
+                <span
+                  className={`flex h-8 w-12 items-center justify-center rounded-full transition-all duration-200 ${
+                    active ? 'bg-slate-800 text-white' : 'text-slate-400'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span className={active ? 'text-slate-800' : 'text-slate-400'}>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
@@ -463,39 +454,41 @@ export default function App() {
 function WeekBar({ semanas, currentWeek, onSelect, onNueva, filtroObra, setFiltroObra, obras, showFiltro }) {
   const ordenadas = [...semanas].sort((a, b) => b.startDate.localeCompare(a.startDate));
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-slate-500">Semana:</span>
-        {ordenadas.length > 0 ? (
-          <select
-            value={currentWeek?.id || ''}
-            onChange={(e) => onSelect(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-medium text-slate-700"
+    <div className="mb-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400 sm:text-sm sm:font-medium sm:normal-case sm:tracking-normal sm:text-slate-500">Semana</span>
+        <div className="flex items-center gap-2">
+          {ordenadas.length > 0 ? (
+            <select
+              value={currentWeek?.id || ''}
+              onChange={(e) => onSelect(e.target.value)}
+              className="w-full flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-700 sm:w-auto sm:py-1.5"
+            >
+              {ordenadas.map((s) => (
+                <option key={s.id} value={s.id}>{s.label}</option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-sm text-slate-400">Sin semanas registradas</span>
+          )}
+          <button
+            onClick={onNueva}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-2.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 sm:py-1.5"
           >
-            {ordenadas.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-sm text-slate-400">Sin semanas registradas</span>
-        )}
-        <button
-          onClick={onNueva}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50"
-        >
-          <CalendarPlus className="h-3.5 w-3.5" /> Nueva semana
-        </button>
+            <CalendarPlus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Nueva semana</span>
+          </button>
+        </div>
       </div>
 
       {showFiltro && (
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-500">Obra:</span>
+          <span className="hidden text-sm font-medium text-slate-500 sm:inline">Obra:</span>
           <select
             value={filtroObra}
             onChange={(e) => setFiltroObra(e.target.value)}
-            className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+            className="w-full flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm sm:w-auto sm:flex-none sm:py-1.5"
           >
-            <option value="todas">Todas</option>
+            <option value="todas">Todas las obras</option>
             {obras.map((o) => (
               <option key={o.id} value={o.id}>{o.nombre}</option>
             ))}
@@ -508,16 +501,18 @@ function WeekBar({ semanas, currentWeek, onSelect, onNueva, filtroObra, setFiltr
 
 function PayrollSummaryView({ resumen, semana, onExport, exporting }) {
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
-        <div>
-          <h3 className="font-semibold text-slate-800">Resumen de nómina — {semana?.label || 'Sin semana'}</h3>
-          <p className="text-sm text-slate-500">Total neto a pagar: <span className="font-semibold text-slate-700">{currencyMX(resumen.total)}</span></p>
-        </div>
+    <div className="space-y-4 sm:space-y-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <h3 className="font-semibold text-slate-800">Resumen de nómina</h3>
+        <p className="text-xs text-slate-400 sm:text-sm">{semana?.label || 'Sin semana'}</p>
+        <p className="mt-2 text-2xl font-bold text-slate-800 sm:text-lg sm:font-semibold">
+          {currencyMX(resumen.total)}
+          <span className="ml-1.5 text-xs font-normal text-slate-400 sm:text-sm">total neto a pagar</span>
+        </p>
         <button
           onClick={onExport}
           disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-60 sm:w-auto sm:py-2.5"
         >
           <Download className="h-4 w-4" /> {exporting ? 'Generando…' : 'Descargar Nómina en Excel'}
         </button>
@@ -535,7 +530,22 @@ function PayrollSummaryView({ resumen, semana, onExport, exporting }) {
             <h4 className="font-semibold text-slate-700">{g.obra.nombre}</h4>
             <span className="text-sm font-semibold text-slate-600">{currencyMX(g.subtotal)}</span>
           </div>
-          <table className="w-full text-sm">
+
+          <div className="divide-y divide-slate-50 sm:hidden">
+            {g.filas
+              .sort((a, b) => a.trabajador.nombre.localeCompare(b.trabajador.nombre, 'es'))
+              .map(({ trabajador, neto }) => (
+                <div key={trabajador.id} className="flex items-center justify-between gap-2 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-700">{trabajador.nombre}</p>
+                    <p className="text-xs text-slate-400">{trabajador.puesto || '—'}</p>
+                  </div>
+                  <span className="shrink-0 font-semibold text-slate-700">{currencyMX(neto)}</span>
+                </div>
+              ))}
+          </div>
+
+          <table className="hidden w-full text-sm sm:table">
             <thead>
               <tr className="border-b border-slate-100 text-left text-slate-400">
                 <th className="px-4 py-2">Trabajador</th>

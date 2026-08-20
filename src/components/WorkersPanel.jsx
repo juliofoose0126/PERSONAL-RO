@@ -49,11 +49,14 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
     setEditId(null);
   };
 
+  const toggleExpand = (id) => setExpandedId((prev) => (prev === id ? null : id));
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5">
       <div className="mb-4 flex items-center gap-2">
         <Users className="h-5 w-5 text-slate-500" />
         <h3 className="font-semibold text-slate-800">Trabajadores</h3>
+        <span className="ml-auto text-xs text-slate-400">{trabajadores.length} total</span>
       </div>
 
       <form onSubmit={handleAdd} className="mb-5 grid grid-cols-1 gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-5">
@@ -61,12 +64,12 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
           placeholder="Nombre completo"
           value={form.nombre}
           onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-          className="rounded border border-slate-200 px-2 py-2 text-sm sm:col-span-2"
+          className="rounded border border-slate-200 px-3 py-2.5 text-sm sm:col-span-2 sm:py-2"
         />
         <select
           value={form.obraId}
           onChange={(e) => setForm({ ...form, obraId: e.target.value })}
-          className="rounded border border-slate-200 px-2 py-2 text-sm"
+          className="rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
         >
           <option value="">Obra…</option>
           {obras.map((o) => (
@@ -77,7 +80,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
           placeholder="Puesto"
           value={form.puesto}
           onChange={(e) => setForm({ ...form, puesto: e.target.value })}
-          className="rounded border border-slate-200 px-2 py-2 text-sm"
+          className="rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
         />
         <input
           type="number"
@@ -85,11 +88,11 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
           placeholder="Sueldo diario"
           value={form.sueldoDiario}
           onChange={(e) => setForm({ ...form, sueldoDiario: e.target.value })}
-          className="rounded border border-slate-200 px-2 py-2 text-sm"
+          className="rounded border border-slate-200 px-3 py-2.5 text-sm sm:py-2"
         />
         <button
           type="submit"
-          className="inline-flex items-center justify-center gap-1 rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 sm:col-span-5"
+          className="inline-flex items-center justify-center gap-1 rounded-lg bg-slate-800 px-3 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700 active:scale-[0.99] sm:col-span-5 sm:py-2"
         >
           <Plus className="h-4 w-4" /> Agregar trabajador
         </button>
@@ -97,18 +100,18 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="pointer-events-none absolute left-2.5 top-3 h-4 w-4 text-slate-400 sm:top-2.5" />
           <input
             placeholder="Buscar por nombre…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 py-2 pl-8 pr-3 text-sm"
+            className="w-full rounded-lg border border-slate-200 py-2.5 pl-8 pr-3 text-sm sm:py-2"
           />
         </div>
         <select
           value={filtroObra}
           onChange={(e) => setFiltroObra(e.target.value)}
-          className="rounded-lg border border-slate-200 px-2 py-2 text-sm"
+          className="rounded-lg border border-slate-200 px-2 py-2.5 text-sm sm:py-2"
         >
           <option value="todas">Todas las obras</option>
           {obras.map((o) => (
@@ -117,7 +120,114 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
         </select>
       </div>
 
-      <div className="overflow-x-auto">
+      {filtrados.length === 0 && (
+        <p className="py-6 text-center text-sm text-slate-400">No hay trabajadores que coincidan.</p>
+      )}
+
+      {/* Vista de tarjetas — móvil */}
+      <div className="divide-y divide-slate-100 sm:hidden">
+        {filtrados.map((t) => (
+          <div key={t.id} className="py-3">
+            {editId === t.id ? (
+              <div className="space-y-2 rounded-lg border border-sky-200 bg-sky-50/40 p-3">
+                <input
+                  value={editForm.nombre}
+                  onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                  className="w-full rounded border border-sky-300 px-3 py-2.5 text-sm"
+                  placeholder="Nombre completo"
+                />
+                <select
+                  value={editForm.obraId}
+                  onChange={(e) => setEditForm({ ...editForm, obraId: e.target.value })}
+                  className="w-full rounded border border-sky-300 px-3 py-2.5 text-sm"
+                >
+                  {obras.map((o) => (
+                    <option key={o.id} value={o.id}>{o.nombre}</option>
+                  ))}
+                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={editForm.puesto}
+                    onChange={(e) => setEditForm({ ...editForm, puesto: e.target.value })}
+                    className="rounded border border-sky-300 px-3 py-2.5 text-sm"
+                    placeholder="Puesto"
+                  />
+                  <input
+                    type="number"
+                    value={editForm.sueldoDiario}
+                    onChange={(e) => setEditForm({ ...editForm, sueldoDiario: e.target.value })}
+                    className="rounded border border-sky-300 px-3 py-2.5 text-right text-sm"
+                    placeholder="Sueldo diario"
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={saveEdit} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white">
+                    <Check className="h-4 w-4" /> Guardar
+                  </button>
+                  <button onClick={() => setEditId(null)} className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-500">
+                    <X className="h-4 w-4" /> Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <button
+                    onClick={() => t.imss && toggleExpand(t.id)}
+                    className="flex min-w-0 flex-1 items-start gap-1.5 text-left"
+                  >
+                    {t.imss && (
+                      <ChevronDown className={`mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 ${expandedId === t.id ? 'rotate-180' : ''}`} />
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="truncate font-medium text-slate-700">{t.nombre}</span>
+                        {t.imss?.estatus === 'BAJA' && (
+                          <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500">BAJA</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400">{obraNombre(t.obraId)} · {t.puesto || '—'}</p>
+                    </div>
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-600">{currencyMX(t.sueldoDiario)}</span>
+                    <button onClick={() => startEdit(t)} className="rounded p-2 text-slate-400 hover:bg-slate-100">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => onDelete(t.id)} className="rounded p-2 text-rose-400 hover:bg-rose-50">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {expandedId === t.id && t.imss && (
+                  <div className="animate-fade-in mt-2 rounded-lg bg-slate-50/70 p-3">
+                    <div className="flex items-start gap-2">
+                      <IdCard className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                      <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                        <Dato label="NSS" value={t.imss.nss} />
+                        <Dato label="RFC" value={t.imss.rfc} />
+                        <Dato label="CURP" value={t.imss.curp} />
+                        <Dato label="Registro patronal" value={t.imss.registroPatronal} />
+                        <Dato label="Fecha inicio" value={t.imss.fechaInicio} />
+                        <Dato label="Fecha baja" value={t.imss.fechaBaja} />
+                        <Dato label="Estatus" value={t.imss.estatus} />
+                        <Dato
+                          label="Documentos"
+                          value={`INE:${t.imss.documentos?.ine || '—'} · CURP:${t.imss.documentos?.curp || '—'} · CSF:${t.imss.documentos?.csf || '—'}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Vista de tabla — escritorio */}
+      <div className="hidden overflow-x-auto sm:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -182,7 +292,7 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
                       <div className="flex items-center gap-1.5">
                         {t.imss && (
                           <button
-                            onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                            onClick={() => toggleExpand(t.id)}
                             className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                             title="Ver datos IMSS"
                           >
@@ -237,9 +347,6 @@ export default function WorkersPanel({ trabajadores, obras, onAdd, onUpdate, onD
             ))}
           </tbody>
         </table>
-        {filtrados.length === 0 && (
-          <p className="py-6 text-center text-sm text-slate-400">No hay trabajadores que coincidan.</p>
-        )}
       </div>
     </div>
   );

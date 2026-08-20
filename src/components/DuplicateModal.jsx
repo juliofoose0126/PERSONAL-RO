@@ -10,19 +10,19 @@ export default function DuplicateModal({ item, total, position, onResolve }) {
   const pct = Math.round(score * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center gap-3 rounded-t-2xl bg-amber-50 px-6 py-4 border-b border-amber-200">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="animate-fade-in-up max-h-[88vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-2xl">
+        <div className="sticky top-0 flex items-center gap-3 rounded-t-2xl border-b border-amber-200 bg-amber-50 px-4 py-3.5 sm:px-6 sm:py-4">
           <AlertTriangle className="h-6 w-6 shrink-0 text-amber-500" />
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-slate-800">Posible trabajador repetido</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-base font-semibold text-slate-800 sm:text-lg">Posible trabajador repetido</h2>
+            <p className="text-xs text-slate-500 sm:text-sm">
               Registro {position} de {total} · Coincidencia del {pct}%
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-2 sm:gap-4 sm:px-6 sm:py-5">
           <div className="rounded-xl border border-slate-200 p-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
               Registro importado
@@ -56,24 +56,24 @@ export default function DuplicateModal({ item, total, position, onResolve }) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
+        <div className="pb-safe flex flex-col gap-2 border-t border-slate-100 px-4 py-3.5 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
           <button
-            onClick={() => onResolve('skip')}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            onClick={() => onResolve('merge')}
+            className="order-1 inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-sky-700 active:scale-[0.98] sm:order-3 sm:py-2"
           >
-            <XCircle className="h-4 w-4" /> Omitir / Descartar
+            <GitMerge className="h-4 w-4" /> Fusionar / Actualizar
           </button>
           <button
             onClick={() => onResolve('create')}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="order-2 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 sm:py-2"
           >
             <UserPlus className="h-4 w-4" /> Crear como nuevo
           </button>
           <button
-            onClick={() => onResolve('merge')}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+            onClick={() => onResolve('skip')}
+            className="order-3 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 sm:order-1 sm:py-2"
           >
-            <GitMerge className="h-4 w-4" /> Fusionar / Actualizar
+            <XCircle className="h-4 w-4" /> Omitir / Descartar
           </button>
         </div>
       </div>

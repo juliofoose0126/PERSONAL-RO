@@ -12,6 +12,15 @@ body,
 
 body {
   @apply bg-slate-100 text-slate-800 antialiased;
+  overflow-x: hidden;
+}
+
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
 }
 
 ::-webkit-scrollbar {
